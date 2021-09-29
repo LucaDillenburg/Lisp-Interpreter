@@ -35,6 +35,7 @@
   [carS    (pair : ExprS)]
   [cdrS    (pair : ExprS)]
   [letS    (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
+  [let*S   (var1sym : symbol) (var1exp : ExprS) (var2sym : symbol) (var2exp : ExprS) (exp : ExprS)]
   )
 
 ; Definition for the partially and completely computed expressions
@@ -89,6 +90,17 @@
          [(cdr) (cdrS (parse (second sl)))]
          [(let) (let ((var (s-exp->list (second sl))))
                   (letS (s-exp->symbol (first var)) (parse (second var)) (parse (third sl))))]
+         [(let*) (let ((varlist (s-exp->list (second sl))))
+                   (let ((var1 (s-exp->list (first varlist))) (var2 (s-exp->list (second varlist))))
+                     (
+                      let*S
+                      (s-exp->symbol (first var1))
+                      (parse (second var1))
+                      (s-exp->symbol (first var2))
+                      (parse (second var2))
+                      (parse (third sl)))
+                     )
+                   )]
          [else (error 'parse "invalid list input")]))]
     [else (error 'parse "invalid input")]))
 
@@ -108,6 +120,8 @@
     [carS    (c)        (carC (desugar c))]
     [cdrS    (c)        (cdrC (desugar c))]
     [letS    (varsym varexp exp)  (appC (lamC varsym (desugar exp)) (desugar varexp))]
+    [let*S   (var1sym var1exp var2sym var2exp exp)
+             (appC (lamC var1sym (appC (lamC var2sym (desugar exp)) (desugar var2exp))) (desugar var1exp))]
     ))
 
 ; 3. Interp: execute the primitive expressions (ExprC) and return the value it got (Value)
