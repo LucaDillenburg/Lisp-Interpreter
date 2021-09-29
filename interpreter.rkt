@@ -34,6 +34,7 @@
   [consS   (car : ExprS) (cdr : ExprS)]
   [carS    (pair : ExprS)]
   [cdrS    (pair : ExprS)]
+  [letS    (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
   )
 
 ; Definition for the partially and completely computed expressions
@@ -86,6 +87,8 @@
          [(cons) (consS (parse (second sl)) (parse (third sl)))]
          [(car) (carS (parse (second sl)))]
          [(cdr) (cdrS (parse (second sl)))]
+         [(let) (let ((var (s-exp->list (second sl))))
+                  (letS (s-exp->symbol (first var)) (parse (second var)) (parse (third sl))))]
          [else (error 'parse "invalid list input")]))]
     [else (error 'parse "invalid input")]))
 
@@ -104,32 +107,8 @@
     [consS   (b1 b2)    (consC (desugar b1) (desugar b2))]
     [carS    (c)        (carC (desugar c))]
     [cdrS    (c)        (cdrC (desugar c))]
+    [letS    (varsym varexp exp)  (appC (lamC varsym (desugar exp)) (desugar varexp))]
     ))
-
-; lookup changes its return type
-(define (lookup [varName : symbol] [env : Env]) : Value
-       (cond
-            [(empty? env) (error 'lookup (string-append (symbol->string varName) " não foi encontrado"))] ; livre (não definida)
-            [else (cond
-                    [(symbol=? varName (bind-name (first env)))   ; achou!
-                     (bind-val (first env))]
-                    [else (lookup varName (rest env))])]))        ; vê no resto
-
-; Primitive operators
-(define (num+ [l : Value] [r : Value]) : Value
-    (cond
-        [(and (numV? l) (numV? r))
-             (numV (+ (numV-n l) (numV-n r)))]
-        [else
-             (error 'num+ "Um dos argumentos não é número")]))
-
-(define (num* [l : Value] [r : Value]) : Value
-    (cond
-        [(and (numV? l) (numV? r))
-             (numV (* (numV-n l) (numV-n r)))]
-        [else
-             (error 'num* "Um dos argumentos não é número")]))
-
 
 ; 3. Interp: execute the primitive expressions (ExprC) and return the value it got (Value)
 (define (interp [a : ExprC] [env : Env] ) : Value
@@ -197,13 +176,30 @@
 ; Facilitator
 (define (interpS [s : s-expression]) (interp (desugar (parse s)) mt-env))
 
-; Examples
-; (interpS '(+ 10 (call (lambda x (car x)) (cons 15 16))))
-; (interpS '(call (lambda x (+ x 5)) 8))
-; (interpS '(call (lambda f (call f (~ 32))) (lambda x (- 200 x))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; AUXILIAR FUNCTIONS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests
-; (test (interp (carC (consC (numC 10) (numC 20)))
-;              mt-env)
-;      (numV 10))
+; lookup changes its return type
+(define (lookup [varName : symbol] [env : Env]) : Value
+       (cond
+            [(empty? env) (error 'lookup (string-append (symbol->string varName) " não foi encontrado"))] ; livre (não definida)
+            [else (cond
+                    [(symbol=? varName (bind-name (first env)))   ; achou!
+                     (bind-val (first env))]
+                    [else (lookup varName (rest env))])]))        ; vê no resto
 
+; Primitive operators
+(define (num+ [l : Value] [r : Value]) : Value
+    (cond
+        [(and (numV? l) (numV? r))
+             (numV (+ (numV-n l) (numV-n r)))]
+        [else
+             (error 'num+ "Um dos argumentos não é número")]))
+
+(define (num* [l : Value] [r : Value]) : Value
+    (cond
+        [(and (numV? l) (numV? r))
+             (numV (* (numV-n l) (numV-n r)))]
+        [else
+             (error 'num* "Um dos argumentos não é número")]))
