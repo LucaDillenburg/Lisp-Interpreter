@@ -17,6 +17,7 @@
   [consC   (car : ExprC) (cdr : ExprC)]; Creates cell with a pair
   [carC    (pair : ExprC)]; Gets 1st element of a pair
   [cdrC    (pair : ExprC)]; Gets 2nd element of a pair
+  [letrecC (varsym : symbol) (vararg : symbol) (varbody : ExprC) (exp : ExprC)]
   )
 
 ; Definition of the expressions with or without sugar expressions.
@@ -36,6 +37,7 @@
   [cdrS    (pair : ExprS)]
   [letS    (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
   [let*S   (var1sym : symbol) (var1exp : ExprS) (var2sym : symbol) (var2exp : ExprS) (exp : ExprS)]
+  [letrecS (varsym : symbol) (vararg : symbol) (varbody : ExprS) (exp : ExprS)]
   )
 
 ; Definition for the partially and completely computed expressions
@@ -49,7 +51,7 @@
 ; Note that Env remains the same, we only change the Binding
 ; Also, Bindings associate symbol with Values
 (define-type Binding
-        [bind (name : symbol) (val : Value)])
+        [bind (name : symbol) (val : (boxof Value))])
 (define-type-alias Env (listof Binding))
 (define mt-env empty)
 (define extend-env cons)
@@ -82,13 +84,13 @@
          [(*) (multS (parse (second sl)) (parse (third sl)))]
          [(-) (bminusS (parse (second sl)) (parse (third sl)))]
          [(~) (uminusS (parse (second sl)))]
-         [(lambda) (lamS (s-exp->symbol (second sl)) (parse (third sl)))] ; definição
+         [(lambda) (lamS  (s-exp->symbol (second sl)) (parse (third sl)))] ; definição
          [(call) (appS (parse (second sl)) (parse (third sl)))]
          [(if) (ifS (parse (second sl)) (parse (third sl)) (parse (fourth sl)))]
          [(cons) (consS (parse (second sl)) (parse (third sl)))]
          [(car) (carS (parse (second sl)))]
          [(cdr) (cdrS (parse (second sl)))]
-         [(let) (let ((var (s-exp->list (second sl))))
+         [(let) (let ((var (s-exp->list (first (s-exp->list (second sl))))))
                   (letS (s-exp->symbol (first var)) (parse (second var)) (parse (third sl))))]
          [(let*) (let ((varlist (s-exp->list (second sl))))
                    (let ((var1 (s-exp->list (first varlist))) (var2 (s-exp->list (second varlist))))
@@ -101,8 +103,19 @@
                       (parse (third sl)))
                      )
                    )]
-         [else (error 'parse "invalid list input")]))]
-    [else (error 'parse "invalid input")]))
+         [(letrec) (let* (
+                         (var (s-exp->list (first (s-exp->list (second sl)))))
+                         (lambda (s-exp->list (second var)))
+                        )
+                  (
+                   letrecS
+                   (s-exp->symbol (first var))
+                   (s-exp->symbol (second lambda))
+                   (parse (third lambda))
+                   (parse (third sl))
+                  ))]
+         [else (error 'parse "invalid list input")]))] ; TODO: REMOVE
+    [else (error 'parse "invalid list input")])) ; TODO: REMOVE
 
 ; 2. Desugar: expand syntax sugar (ExprS) into primitive expressions (ExprC)
 (define (desugar [as : ExprS]) : ExprC
@@ -122,14 +135,15 @@
     [letS    (varsym varexp exp)  (appC (lamC varsym (desugar exp)) (desugar varexp))]
     [let*S   (var1sym var1exp var2sym var2exp exp)
              (appC (lamC var1sym (appC (lamC var2sym (desugar exp)) (desugar var2exp))) (desugar var1exp))]
+    [letrecS (varsym vararg varbody exp) (letrecC varsym vararg (desugar varbody) (desugar exp))]
     ))
 
 ; 3. Interp: execute the primitive expressions (ExprC) and return the value it got (Value)
 (define (interp [a : ExprC] [env : Env] ) : Value
   (type-case ExprC a
-    [numC (n) (numV n) ]
-    [idC (n)  (lookup n env)]; cascading search, first in env then in store
-    [lamC (a b) (closV a b env) ]
+    [numC (n) (numV n)]
+    [idC (n)  (unbox (lookup n env))]; cascading search, first in env then in store
+    [lamC (a b) (closV a b env)]
  
     ; application of function
     [appC (f a)
@@ -137,9 +151,18 @@
                 (argvalue (interp a env)))
             (type-case Value closure
               [closV (parameter body env)
-                     (interp body (extend-env (bind parameter argvalue) env))]
+                     (interp body (extend-env (bind parameter (box argvalue)) env))]
               [else (error 'interp "operation app aplied to non-closure")]
               ))]
+
+    ; letrec
+    ; [letrecC (varsym : symbol) (varexp : ExprC) (exp : ExprC)]
+    [letrecC (varsym vararg varbody exp) (let* (
+                                                (updatedenv (extend-env (bind varsym (box (numV 1))) env)) ; any value
+                                                (newClos (closV vararg varbody updatedenv))
+                                               )
+                                           (begin (set-box! (lookup varsym updatedenv) newClos)
+                                                  (interp exp updatedenv))) ]
    
     ;plusC
     [plusC (l r)
@@ -195,7 +218,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; lookup changes its return type
-(define (lookup [varName : symbol] [env : Env]) : Value
+(define (lookup [varName : symbol] [env : Env]) : (boxof Value)
        (cond
             [(empty? env) (error 'lookup (string-append (symbol->string varName) " não foi encontrado"))] ; livre (não definida)
             [else (cond
