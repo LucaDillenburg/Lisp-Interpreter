@@ -2,14 +2,27 @@
 
 ### Examples
 ```
-; let
-(let ((a 5)) (+ a 3)) ; expect 8
-
-; let*
-(let* ((a 5) (b (+ a 3))) (+ b 2)) ; expect 10
-
-; letrec
-(letrec ((contains (lambda n (if n 10 (call contains (- n 1)))))) (call contains 5)) ; expect 10
+> (interpS '(quote alan))
+  - Value
+  (symV 'alan)
+> (interpS '(cons (quote x) (quote z)))
+  - Value
+  (consV (symV 'x) (symV 'z))
+> (interpS '(let x (+ 4 5) (* x 7)))
+  - Value
+  (numV 63)
+> (interpS '(let* x 4 y x (+ x y)))
+  - Value
+  (numV 8)
+> (interpS '(let* x (+ 4 5) y (+ x x) (+ x y)))
+  - Value
+  (numV 27)
+> (interpS '(let x (+ 4 0)(let* x (+ x x) y (+ x x) (+ x y)))); cuidado com os valores 
+  - Value
+  (numV 24)
+> (interpS '(letrec func (lambda x (if x (* x (call func (- x 1))) 1)) (call func 6)))
+  - Value
+  (numV 720)
 ```
 
 ### Outros materiais

@@ -37,7 +37,7 @@
   [cdrS    (pair : ExprS)]
   [letS    (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
   [let*S   (var1sym : symbol) (var1exp : ExprS) (var2sym : symbol) (var2exp : ExprS) (exp : ExprS)]
-  [letrecS (varsym : symbol) (vararg : symbol) (varbody : ExprS) (exp : ExprS)]
+  [letrecS (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
   )
 
 ; Definition for the partially and completely computed expressions
@@ -90,30 +90,21 @@
          [(cons) (consS (parse (second sl)) (parse (third sl)))]
          [(car) (carS (parse (second sl)))]
          [(cdr) (cdrS (parse (second sl)))]
-         [(let) (let ((var (s-exp->list (first (s-exp->list (second sl))))))
-                  (letS (s-exp->symbol (first var)) (parse (second var)) (parse (third sl))))]
-         [(let*) (let ((varlist (s-exp->list (second sl))))
-                   (let ((var1 (s-exp->list (first varlist))) (var2 (s-exp->list (second varlist))))
-                     (
-                      let*S
-                      (s-exp->symbol (first var1))
-                      (parse (second var1))
-                      (s-exp->symbol (first var2))
-                      (parse (second var2))
-                      (parse (third sl)))
-                     )
-                   )]
-         [(letrec) (let* (
-                         (var (s-exp->list (first (s-exp->list (second sl)))))
-                         (lambda (s-exp->list (second var)))
-                        )
-                  (
-                   letrecS
-                   (s-exp->symbol (first var))
-                   (s-exp->symbol (second lambda))
-                   (parse (third lambda))
+         [(let) (letS (s-exp->symbol (second sl)) (parse (third sl)) (parse (fourth sl)))]
+         [(let*) (
+                   let*S
+                   (s-exp->symbol (second sl))
                    (parse (third sl))
-                  ))]
+                   (s-exp->symbol (fourth sl))
+                   (parse (list-ref sl 4))
+                   (parse (list-ref sl 5))
+                 )]
+         [(letrec) (
+                   letrecS
+                   (s-exp->symbol (second sl))
+                   (parse (third sl))
+                   (parse (fourth sl))
+                  )]
          [else (error 'parse "invalid list input")]))] ; TODO: REMOVE
     [else (error 'parse "invalid list input")])) ; TODO: REMOVE
 
@@ -135,7 +126,10 @@
     [letS    (varsym varexp exp)  (appC (lamC varsym (desugar exp)) (desugar varexp))]
     [let*S   (var1sym var1exp var2sym var2exp exp)
              (appC (lamC var1sym (appC (lamC var2sym (desugar exp)) (desugar var2exp))) (desugar var1exp))]
-    [letrecS (varsym vararg varbody exp) (letrecC varsym vararg (desugar varbody) (desugar exp))]
+    [letrecS (varsym varexp exp) (type-case ExprS varexp
+                                   [lamS (vararg varbody) (letrecC varsym vararg (desugar varbody) (desugar exp))]
+                                   [else (desugar (letS varsym varexp exp))]
+                                  )]
     ))
 
 ; 3. Interp: execute the primitive expressions (ExprC) and return the value it got (Value)
@@ -156,9 +150,8 @@
               ))]
 
     ; letrec
-    ; [letrecC (varsym : symbol) (varexp : ExprC) (exp : ExprC)]
     [letrecC (varsym vararg varbody exp) (let* (
-                                                (updatedenv (extend-env (bind varsym (box (numV 1))) env)) ; any value
+                                                (updatedenv (extend-env (bind varsym (box (numV 0))) env)) ; any value
                                                 (newClos (closV vararg varbody updatedenv))
                                                )
                                            (begin (set-box! (lookup varsym updatedenv) newClos)
