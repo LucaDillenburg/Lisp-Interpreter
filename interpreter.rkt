@@ -18,7 +18,7 @@
   [carC    (pair : ExprC)]; Gets 1st element of a pair
   [cdrC    (pair : ExprC)]; Gets 2nd element of a pair
   [letrecC (varsym : symbol) (vararg : symbol) (varbody : ExprC) (exp : ExprC)]
-  [quoteC (q : ExprC)]
+  [quoteC (s : symbol)]
   )
 
 ; Definition of the expressions with or without sugar expressions.
@@ -39,7 +39,7 @@
   [letS    (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
   [let*S   (var1sym : symbol) (var1exp : ExprS) (var2sym : symbol) (var2exp : ExprS) (exp : ExprS)]
   [letrecS (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
-  [quoteS (q : ExprS)]
+  [quoteS (q : symbol)]
   )
 
 ; Definition for the partially and completely computed expressions
@@ -108,7 +108,7 @@
                    (parse (third sl))
                    (parse (fourth sl))
                   )]
-         [(quote) (quoteS (parse (first sl)))]
+         [(quote) (quoteS (s-exp->symbol (second sl)))]
          [else (error 'parse "invalid list input")] ))]
     [else (error 'parse "invalid list input")] )) 
 
@@ -134,7 +134,7 @@
                                    [lamS (vararg varbody) (letrecC varsym vararg (desugar varbody) (desugar exp))]
                                    [else (desugar (letS varsym varexp exp))]
                                   )]
-    [quoteS (c) (quoteC (desugar c))]
+    [quoteS (c) (quoteC c)]
     ))
 
 ; 3. Interp: execute the primitive expressions (ExprC) and return the value it got (Value)
@@ -207,7 +207,7 @@
                 [else (error 'interp "cdr applied to non-cell")]
                 )]
     ;quoteC
-    [quoteC (q) (symV (quote q))]
+    [quoteC (q) (symV q)]
     ))
 
 ; Facilitator
