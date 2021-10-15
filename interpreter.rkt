@@ -18,6 +18,8 @@
   [carC    (pair : ExprC)]; Gets 1st element of a pair
   [cdrC    (pair : ExprC)]; Gets 2nd element of a pair
   [letrecC (varsym : symbol) (vararg : symbol) (varbody : ExprC) (exp : ExprC)]
+  [quoteC (s : symbol)]
+  [loopC]
   )
 
 ; Definition of the expressions with or without sugar expressions.
@@ -38,6 +40,8 @@
   [letS    (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
   [let*S   (var1sym : symbol) (var1exp : ExprS) (var2sym : symbol) (var2exp : ExprS) (exp : ExprS)]
   [letrecS (varsym : symbol) (varexp : ExprS) (exp : ExprS)]
+  [quoteS (q : symbol)]
+  [loopS]
   )
 
 ; Definition for the partially and completely computed expressions
@@ -45,6 +49,7 @@
   [numV  (n : number)]
   [closV (arg : symbol) (body : ExprC) (env : Env)]
   [consV (car : Value) (cdr : Value)]
+  [symV (s : symbol)]
   )
 
 ; Definition of the Env type
@@ -105,8 +110,10 @@
                    (parse (third sl))
                    (parse (fourth sl))
                   )]
-         [else (error 'parse "invalid list input")]))] ; TODO: REMOVE
-    [else (error 'parse "invalid list input")])) ; TODO: REMOVE
+         [(quote) (quoteS (s-exp->symbol (second sl)))]
+         [(read-loop) (loopS)]
+         [else (error 'parse "invalid list input")] ))]
+    [else (error 'parse "invalid list input")] )) 
 
 ; 2. Desugar: expand syntax sugar (ExprS) into primitive expressions (ExprC)
 (define (desugar [as : ExprS]) : ExprC
@@ -130,6 +137,8 @@
                                    [lamS (vararg varbody) (letrecC varsym vararg (desugar varbody) (desugar exp))]
                                    [else (desugar (letS varsym varexp exp))]
                                   )]
+    [quoteS (c) (quoteC c)]
+    [loopS () (loopC)]
     ))
 
 ; 3. Interp: execute the primitive expressions (ExprC) and return the value it got (Value)
@@ -201,6 +210,11 @@
                        cdr]
                 [else (error 'interp "cdr applied to non-cell")]
                 )]
+    ;quoteC
+    [quoteC (q) (symV q)]
+
+    ;loopC
+    [loopC () (loop mt-env)]
     ))
 
 ; Facilitator
@@ -233,3 +247,15 @@
              (numV (* (numV-n l) (numV-n r)))]
         [else
              (error 'num* "Um dos argumentos não é número")]))
+(define (loop env)
+    (let ([input (read)])
+      (if (eq? (symbol->s-exp '@END) input)
+          (symV '@ACABOU)
+          (begin
+            (display (interp (desugar (parse input)) env))
+            (display "\n")
+            (loop env)
+          )
+      )
+    )
+)
