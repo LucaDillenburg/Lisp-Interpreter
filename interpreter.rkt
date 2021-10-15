@@ -259,3 +259,19 @@
       )
     )
 )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; TESTS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test (interpS '(quote alan))
+      (symV 'alan))
+
+(test (interpS '(let x 5 (* x 4)))
+      (numV 20))
+
+(test (interpS '(let* x 2 y (+ x 13) (* x y)))
+      (numV 30))
+
+(test (interpS '(letrec fatorial (lambda x (if x (* x (call fatorial (- x 1))) 1)) (call fatorial 5)))
+      (numV 120))
