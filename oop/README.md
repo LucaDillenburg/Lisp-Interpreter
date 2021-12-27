@@ -24,17 +24,11 @@ ps: ```self``` is a reference to the class object
 ### Example
 ```
 > (interpAll)
-    (quote yourname)
-    (cons (quote x) (quote z))
-    (let x (+ 4 5) (* x 7))
-    (let* x 4
-        y x
-        (+ x y))
-    (let* x (+ 4 5) y (+ x x) (+ x y))
-
-    (let x (+ 4 0)
-        (let* x (+ x x) y (+ x x)
-            (+ x y)))
-
-    (letrec func (lambda x (if x (* x (call func (- x 1))) 1)) (call func 6))
+    (let Wallet
+             (class Object money
+                    (regularMethod credit amount (set! money (+ money amount)))
+                    (regularMethod debit amount (set! money (- money amount))))
+       (let wallet (new Wallet 0)
+         (seq (send wallet credit 10)
+              (send wallet debit 3))))
 ```
