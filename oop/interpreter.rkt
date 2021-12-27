@@ -14,7 +14,6 @@
   [ifC     (cond : ExprC) (y : ExprC) (n : ExprC)]
   [letC (var : symbol) (expression : ExprC) (body : ExprC)]
   [quoteC  (sym : symbol)]
-  [readloopC (placeholder : symbol)]
   [nullC]
   [seqC  (statement1 : ExprC) (statement2 : ExprC)]
   [setC  (varName : symbol) (statement : ExprC)]
@@ -23,6 +22,7 @@
   [primitiveMethodC (name : symbol) (primNumber : number)]
   [newC (class : symbol) (attribute : ExprC)]
   [sendC (object : symbol) (methodName : symbol) (param : ExprC)]
+  [readloopC ]
   )
 
 ; Definition of the expressions with or without sugar expressions.
@@ -37,7 +37,6 @@
   [ifS     (c : ExprS) (y : ExprS) (n : ExprS)]
   [letS    (var : symbol) (exp : ExprS) (body : ExprS)]
   [quoteS  (sym : symbol)]
-  [readloopS (placeholder : symbol)]
   [seqS (statement1 : ExprS) (statement2 : ExprS)]
   [setS (variable : symbol) (statement : ExprS)]
   [classS  (superClass : symbol) (instVar : symbol) (method1 : ExprS ) (method2 : ExprS)]
@@ -46,6 +45,7 @@
   [newS (class : symbol) (value : ExprS)]
   [sendS (receiver : symbol) (methodName : symbol) (arg : ExprS)]
   [nullS  ]
+  [readloopS]
   )
 
 (define-type MethodDefinition
@@ -116,6 +116,7 @@
                                           (s-exp->number (third sl)))]
          [(send) (sendS (s-exp->symbol (second sl)) (s-exp->symbol (third sl)) (parse (fourth sl)))]
          [(new)  (newS (s-exp->symbol (second sl)) (parse (third sl)))]
+         [(read-loop) (readloopS)]
         [else (error 'parse "invalid list input")]
          ))]
     [else (error 'parse "invalid input")]
@@ -133,7 +134,6 @@
     [ifS     (c y n)    (ifC (desugar c) (desugar y) (desugar n))]
     [letS    (v e b)    (letC v (desugar e) (desugar b))]
     [quoteS  (sym) (quoteC sym)]
-    [readloopS (s) (readloopC s)]
     [nullS  ()  (nullC)]
     [seqS (st1 st2) (seqC (desugar st1) (desugar st2))]
     [setS (var st)  (setC var (desugar st))]
@@ -142,6 +142,7 @@
     [primitiveMethodS (name primNumber) (primitiveMethodC name primNumber)]
     [newS (class attribute) (newC class (desugar attribute))]
     [sendS (object methodName param) (sendC object methodName (desugar param))]
+    [readloopS () (readloopC)]
     ))
 
 ; 3. Interp: execute the primitive expressions (ExprC) and return the value it got (Value)
@@ -182,15 +183,6 @@
                    [else (error 'interp "condition not a number")]
                    )]
     [quoteC  (s) (symV s)]
-    [readloopC (ph) (letrec ( (read-till-end (lambda ()
-                                              (let ( (input (read)))
-                                                (if (and (s-exp-symbol? input )
-                                                         (eq? (s-exp->symbol input) '@END))
-                                                    (begin (display 'FINISHED-READLOOP)
-                                                           (symV  'END_OF_loop))
-                                                    (begin (display (interp (desugar (parse input)) objectEnv ))
-                                                           (read-till-end)))))))
-                     (read-till-end))]
     [letC (variable expression body)
           (let ((value (interp expression objectEnv )))
             (interp body
@@ -243,6 +235,17 @@
                                          ))]
           [else (error 'objectEnvLookup "invalid object")]
         )]
+
+    ;readloopC
+    [readloopC () (letrec ( (read-till-end (lambda ()
+                                              (let ( (input (read)))
+                                                (if (and (s-exp-symbol? input )
+                                                         (eq? (s-exp->symbol input) '@END))
+                                                    (begin (display 'FINISHED-READLOOP)
+                                                           (symV  'END_OF_loop))
+                                                    (begin (display (interp (desugar (parse input)) objectEnv))
+                                                           (read-till-end)))))))
+                     (read-till-end))]
     ))
 
 ; Facilitator
