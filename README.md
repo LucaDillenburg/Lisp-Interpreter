@@ -3,30 +3,29 @@
 
 ## Interpreters
 1. [Default](default/): functional and synchronous lisp interpreter
-```
-(interpS '(cons 1 (cons 2 (cons 3 (cons 4 5)))))
-; result: (consV (numV 1) (consV (numV 2) (consV (numV 3) (consV (numV 4) (numV 5)))))
-```
-
+    ```
+    (interpS '(cons 1 (cons 2 (cons 3 (cons 4 5)))))
+    ; result: (consV (numV 1) (consV (numV 2) (consV (numV 3) (consV (numV 4) (numV 5)))))
+    ```
 
 2. [Demand Driven Evaluation](ondemand/): asynchronous lisp interpreter using demand driven evaluation
-```
-(letrec
-    construct (lambda x (cons x (call construct (+ x 1))))
-    (car (cdr (cdr (call construct 1)))))
-; result: (numV 3)
-```
+    ```
+    (letrec
+        construct (lambda x (cons x (call construct (+ x 1))))
+        (car (cdr (cdr (call construct 1)))))
+    ; result: (numV 3)
+    ```
 
 3. [Object Oriented Programming](oop/): object oriented lisp interpreter
-```
-(let Wallet (class Object money
-        (regularMethod credit amount (set! money (+ money amount)))
-        (regularMethod debit amount (set! money (- money amount))))
-    (let wallet (new Wallet 0)
-        (seq (send wallet credit 10)
-            (send wallet debit 3))))
-; result: (numV 7)
-```
+    ```
+    (let Wallet (class Object money
+            (regularMethod credit amount (set! money (+ money amount)))
+            (regularMethod debit amount (set! money (- money amount))))
+        (let wallet (new Wallet 0)
+            (seq (send wallet credit 10)
+                (send wallet debit 3))))
+    ; result: (numV 7)
+    ```
 
 ## Usage
 - **Interpret one line:** To interpret a single line of code, use the command below:
@@ -52,8 +51,4 @@
 
 3. Interpret: execute the primitive expressions (ExprC) and return the value it got (Value)
 
-**All steps:** 
-```rkt
-(define s '(...))
-(interp (desugar (parse s)) mt-env)
-```
+**All steps:** ```(interp (desugar (parse '(...))) mt-env)```
