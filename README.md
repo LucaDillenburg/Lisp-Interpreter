@@ -1,26 +1,37 @@
-# Lisp Interpreter
-*This is a basic lisp interpreter using Lisp (```plaid-typed```) to interpret it.*
+# Lisp Interpreters
+*This collection of basic lisp interpreters using Lisp (```plaid-typed```).*
 
-### Steps:
-1. Parse: receive a quoted expression (s-expression) and parsers into an expression possibly with syntax sugar (ExprS).
+## Interpreters
+1. [Default](default/): functional and synchronous lisp interpreter
+```
+(interpS '(cons 1 (cons 2 (cons 3 (cons 4 5)))))
+; result: (consV (numV 1) (consV (numV 2) (consV (numV 3) (consV (numV 4) (numV 5)))))
+```
 
-    Note that the quoted expression can be an array, a number, a symbol, etc
 
-2. Desugar: expand syntax sugar (ExprS) into primitive expressions (ExprC)
+2. [Demand Driven Evaluation](ondemand/): asynchronous lisp interpreter using demand driven evaluation
+```
+(letrec
+    construct (lambda x (cons x (call construct (+ x 1))))
+    (car (cdr (cdr (call construct 1)))))
+; result: (numV 3)
+```
 
-3. Interpret: execute the primitive expressions (ExprC) and return the value it got (Value)
+3. [Object Oriented Programming](oop/): object oriented lisp interpreter
+```
+(let Wallet (class Object money
+        (regularMethod credit amount (set! money (+ money amount)))
+        (regularMethod debit amount (set! money (- money amount))))
+    (let wallet (new Wallet 0)
+        (seq (send wallet credit 10)
+            (send wallet debit 3))))
+; result: (numV 7)
+```
 
-### Usage
-- **Separate Steps:** You can run the steps separately by using some of the commands below:
-    ```
-    (define s '(...))
-    (interp (desugar (parse s)) mt-env)
-    ```
-
+## Usage
 - **Interpret one line:** To interpret a single line of code, use the command below:
     ```
-    (define s '(...))
-    (interpS s)
+    (interpS '(...))
     ```
 
 - **Interpret multiple lines of code:** To interpret multiple lines of code, use the command below:
@@ -30,55 +41,19 @@
     ; use @END to quit
     ```
 
-### Available Operations
-*List*
-- ```car```: get first element of the list
-- ```cdr```: get list from the second element
-- ```cons```: create a list with first and second parameters
+---
 
-*Arithmetic*
-- ```+```: sum first and second parameters
-- ```-```: subtracts first and second parameters
-- ```*```: multiplies first and second parameters
-- ```/```: divides first and second parameters
+### How does it actually work? Steps to interpret
+1. Parse: receive a quoted expression (s-expression) and parsers into an expression possibly with syntax sugar (ExprS).
 
-*Variable*
-- ```let```: creates a variable and calls the expression with it at disposal
-- ```let*```: creates two variables (in which the second one can access the first) and calls the expression with them at disposal
-- ```letrec```: create a variable that can use itself in the lambda definition and calls the expression with it at disposal
+    Note that the quoted expression can be an array, a number, a symbol, etc
 
-*More*
-- ```quote```: creates a symbolic expression with the parameter
-- ```if```: condition
-- ```lambda```: creates a function
-- ```call```: call function
+2. Desugar: expand syntax sugar (ExprS) into primitive expressions (ExprC)
 
-### Example
+3. Interpret: execute the primitive expressions (ExprC) and return the value it got (Value)
+
+**All steps:** 
+```rkt
+(define s '(...))
+(interp (desugar (parse s)) mt-env)
 ```
-> (interpAll)
-    (quote yourname)
-    (cons (quote x) (quote z))
-    (let x (+ 4 5) (* x 7))
-    (let* x 4
-        y x
-        (+ x y))
-    (let* x (+ 4 5) y (+ x x) (+ x y))
-
-    (let x (+ 4 0)
-        (let* x (+ x x) y (+ x x)
-            (+ x y)))
-
-    (letrec func (lambda x (if x (* x (call func (- x 1))) 1)) (call func 6))
-```
-
-### Outros materiais
-- [Material da disciplina sobre plaid-typed](https://edisciplinas.usp.br/pluginfile.php/6450238/mod_resource/content/4/Gubi-Plai_Typed.pdf)
-
-### Dúvida
-Já que o let e let* vão ter um número fixo de argumentos, qual deve ser a sintaxe do mesmo?
-- ```(let (a 1) a)``` ou ```(let ((a 1)) a)``` ?
-- ```(let* (a 1) (b a) b)``` ou ```(let ((a 1) (b a)) b)``` ?
-
-### Authors
-- Luca Dillenburg - 11796580
-- Arthur - 10297647
