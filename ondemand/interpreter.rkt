@@ -195,9 +195,6 @@
                 )]
     [cdrC (c) (type-case Value (interp c env)
                 [consV (car cdr) (query-promise cdr)]
-                       ; TODO: (type-case Promise cdr
-                       ;            [aPromise  (value) (unbox value)]
-                       ;            )]
                 [else (error 'interp "cdr applied to non-cell")]
                 )]
 
