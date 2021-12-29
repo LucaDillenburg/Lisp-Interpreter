@@ -269,7 +269,7 @@
       (unbox (lookup object objectEnv))))
 
 (define (methodLookup [class : symbol] [methodName : symbol] [objectEnv : Env]) : Value
-  (if (eq? class 'Object) ((vector-ref primitiveMethodVector 1) (symV methodName))
+  (if (eq? class 'null) ((vector-ref primitiveMethodVector 1) (symV methodName))
       (let ((classValue (unbox (lookup class objectEnv))))
         (type-case Value classValue
           [classV (superClass instVar m1Name m1Method m2Name m2Method)
@@ -283,7 +283,7 @@
   (extend-env (bind 'class (box (symV class))) objEnv))
 
 (define (createObjEnv [class : symbol] [outsideEnv : Env] [insideEnv : Env]) : Env
-  (if (eq? class 'Object) insideEnv
+  (if (eq? class 'null) insideEnv
       (let ((classValue (unbox (lookup class outsideEnv))))
         (type-case Value classValue
           [classV (superClass instVar m1Name m1Method m2Name m2Method)
