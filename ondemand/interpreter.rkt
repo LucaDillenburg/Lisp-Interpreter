@@ -88,7 +88,7 @@
 (define (parse [s : s-expression]) : ExprS
   (cond
     [(s-exp-number? s) (numS (s-exp->number s))]
-    [(s-exp-symbol? s) (idS (s-exp->symbol s))] ; pode ser um símbolo livre nas definições de função
+    [(s-exp-symbol? s) (idS (s-exp->symbol s))]
     [(s-exp-list? s)
      (let ([sl (s-exp->list s)])
        (case (s-exp->symbol (first sl))
@@ -96,7 +96,7 @@
          [(*) (multS (parse (second sl)) (parse (third sl)))]
          [(-) (bminusS (parse (second sl)) (parse (third sl)))]
          [(~) (uminusS (parse (second sl)))]
-         [(lambda) (lamS (s-exp->symbol (second sl)) (parse (third sl)))] ; definição
+         [(lambda) (lamS (s-exp->symbol (second sl)) (parse (third sl)))]
          [(call) (appS (parse (second sl)) (parse (third sl)))]
          [(if) (ifS (parse (second sl)) (parse (third sl)) (parse (fourth sl)))]
          [(cons) (consS (parse (second sl)) (parse (third sl)))]
@@ -247,11 +247,11 @@
 ; lookup changes its return type
 (define (lookup [varName : symbol] [env : Env]) : (boxof Promise); lookup returns the box, we need this to change the value later
        (cond
-            [(empty? env) (error 'lookup (string-append (symbol->string varName) " não foi encontrado"))] ; livre (não definida)
+            [(empty? env) (error 'lookup (string-append (symbol->string varName) " not found"))]
             [else (cond
-                    [(symbol=? varName (bind-name (first env)))   ; achou!
+                    [(symbol=? varName (bind-name (first env)))   ; found
                      (bind-val (first env))]
-                    [else (lookup varName (rest env))])]))        ; vê no resto
+                    [else (lookup varName (rest env))])]))        ; searches the rest
 
 
 
@@ -261,14 +261,14 @@
         [(and (numV? l) (numV? r))
              (numV (+ (numV-n l) (numV-n r)))]
         [else
-             (error 'num+ "Um dos argumentos não é número")]))
+             (error 'num+ "One of the arguments is not a number")]))
 
 (define (num* [l : Value] [r : Value]) : Value
     (cond
         [(and (numV? l) (numV? r))
              (numV (* (numV-n l) (numV-n r)))]
         [else
-             (error 'num* "Um dos argumentos não é número")]))
+             (error 'num* "One of the arguments is not a number")]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; TESTS

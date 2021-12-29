@@ -88,7 +88,7 @@
 (define (parse [s : s-expression]) : ExprS
   (cond
     [(s-exp-number? s) (numS (s-exp->number s))]
-    [(s-exp-symbol? s) (idS (s-exp->symbol s))] ; pode ser um símbolo livre nas definições de função
+    [(s-exp-symbol? s) (idS (s-exp->symbol s))]
     [(s-exp-list? s)
      (let ([sl (s-exp->list s)])
        (case (s-exp->symbol (first sl))
@@ -250,7 +250,7 @@
 
 ; Facilitator
 ; Enviromnent needs to be intialzed with the association for the Object class, which needs to be defined elsewhere
-(define Object (classV 'null 'null 'mensagemDesconhecida (primitiveMethod 1) 'null (regularMethod 'x (numC 0))))
+(define Object (classV 'null 'null 'unknownMessage (primitiveMethod 1) 'null (regularMethod 'x (numC 0))))
 (define initialObjectEnv (extend-env (bind 'class (box (symV 'null))) (extend-env (bind 'Object (box Object)) mt-env)))
 (define (interpS [s : s-expression]) : Value (interp (desugar (parse s)) initialObjectEnv ))
 
@@ -264,20 +264,20 @@
   (if (eq? object 'self)
       (type-case Value (unbox (lookup 'class objectEnv))
         [symV (sym) (objectV sym objectEnv)]
-        [else (error 'objectLookup (string-append (symbol->string object) " não foi encontrado"))]
+        [else (error 'objectLookup (string-append (symbol->string object) " not found"))]
        )
       (unbox (lookup object objectEnv))))
 
 (define (methodLookup [initialClass : symbol] [class : symbol] [methodName : symbol] [objectEnv : Env]) : Value
   (if (eq? class 'null)
-      (methodLookup initialClass initialClass 'mensagemDesconhecida objectEnv) ; call mensagemDesconhecida from object
+      (methodLookup initialClass initialClass 'unknownMessage objectEnv) ; call unknownMessage from object
       (let ((classValue (unbox (lookup class objectEnv))))
         (type-case Value classValue
           [classV (superClass instVar m1Name m1Method m2Name m2Method)
                   (if (eq?  m1Name methodName) (methodV m1Name m1Method)
                       (if (eq? m2Name methodName) (methodV m2Name m2Method)
                           (methodLookup initialClass superClass methodName objectEnv)))]
-          [else (error 'methodLookup (string-append (symbol->string class) " superclass inválida"))]
+          [else (error 'methodLookup (string-append (symbol->string class) " invalid superclass"))]
           ))))
 
 (define (setClassIntoEnv [class : symbol] [objEnv : Env]) : Env
@@ -291,17 +291,17 @@
                   (let ((envWithClass (extend-env (bind class (box classValue)) insideEnv)))
                     (let ((envWithClassAndAttr (extend-env (bind instVar (box (nullV))) envWithClass)))
                       (createObjEnv superClass outsideEnv envWithClassAndAttr)))]
-          [else (error 'createObjEnv (string-append (symbol->string class) " superclass inválida"))]
+          [else (error 'createObjEnv (string-append (symbol->string class) " invalid superclass"))]
         ))))
 
 ; auxiary functions for messageLookup                                         
 (define (lookup [varName : symbol] [env : Env]) : (boxof Value)
        (cond
-            [(empty? env) (error 'lookup (string-append (symbol->string varName) " não foi encontrado"))] ; livre (não definida)
+            [(empty? env) (error 'lookup (string-append (symbol->string varName) " not found"))]
             [else (cond
-                    [(symbol=? varName (bind-name (first env)))   ; achou!
+                    [(symbol=? varName (bind-name (first env)))   ; found
                      (bind-val (first env))]
-                    [else (lookup varName (rest env))])]))        ; vê no resto
+                    [else (lookup varName (rest env))])]))        ; searches the rest
 
 
 
@@ -311,24 +311,24 @@
         [(and (numV? l) (numV? r))
              (numV (+ (numV-n l) (numV-n r)))]
         [else
-             (error 'num+ "Um dos argumentos não é número")]))
+             (error 'num+ "One of the arguments is not a number")]))
 
 (define (num* [l : Value] [r : Value]) : Value
     (cond
         [(and (numV? l) (numV? r))
              (numV (* (numV-n l) (numV-n r)))]
         [else
-             (error 'num* "Um dos argumentos não é número")]))
+             (error 'num* "One of the arguments is not a number")]))
 
 
 (define primitiveMethodVector
   (make-vector 2 (lambda ([ x : Value] ) : Value
                    (error 'primitive "invalid primitive method")))); 0
-;add primitive 1 for 'mensagemDesconhecida
+;add primitive 1 for 'unknownMessage
 (vector-set! primitiveMethodVector 1
              (lambda ([methodName : Value]) (type-case Value methodName
                                  [symV (symbolValue) (error 'messaging
-                                                            (string-append "mensagemDesconhecida:" (symbol->string symbolValue)))]
+                                                            (string-append "unknownMessage:" (symbol->string symbolValue)))]
                                  [else (error 'wrongArgument
                                               "Wrong Argument: primitive 1 should receive a symV")])))
 
@@ -361,7 +361,7 @@
 
 (test
  (interpS '(let Wallet (class Object money
-                          (regularMethod mensagemDesconhecida x 19)
+                          (regularMethod unknownMessage x 19)
                           (regularMethod debit amount (set! money (- money amount))))
               (let wallet (new Wallet 0)
                 (send wallet invalid 1))))
