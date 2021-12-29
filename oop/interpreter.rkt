@@ -221,8 +221,8 @@
                                            ))
                                          insideObjEnv)))]
     [sendC (object methodName param) (type-case Value (objectLookup object objectEnv)
-          [objectV (objClass objEnv) (let ((methodOrErrorValue (methodLookup objClass methodName objEnv)))
-                                       (type-case Value methodOrErrorValue
+          [objectV (objClass objEnv) (let ((maybeMethod (methodLookup objClass objClass methodName objEnv)))
+                                       (type-case Value maybeMethod
                                          [methodV (name definition) (type-case MethodDefinition definition
                                             [regularMethod (arg body)
                                                            (interp body (extend-env (bind arg (box (interp param objectEnv))) objEnv))]
@@ -231,9 +231,9 @@
                                                                  ((vector-ref primitiveMethodVector 0) (numV num))
                                                                  ((vector-ref primitiveMethodVector num) (interp param objectEnv)))]
                                             )]
-                                       [else methodOrErrorValue]
+                                       [else (error 'interp "invalid method definition")]
                                          ))]
-          [else (error 'objectEnvLookup "invalid object")]
+          [else (error 'interp "invalid object")]
         )]
 
     ;readloopC
@@ -268,14 +268,15 @@
        )
       (unbox (lookup object objectEnv))))
 
-(define (methodLookup [class : symbol] [methodName : symbol] [objectEnv : Env]) : Value
-  (if (eq? class 'null) ((vector-ref primitiveMethodVector 1) (symV methodName))
+(define (methodLookup [initialClass : symbol] [class : symbol] [methodName : symbol] [objectEnv : Env]) : Value
+  (if (eq? class 'null)
+      (methodLookup initialClass initialClass 'mensagemDesconhecida objectEnv) ; call mensagemDesconhecida from object
       (let ((classValue (unbox (lookup class objectEnv))))
         (type-case Value classValue
           [classV (superClass instVar m1Name m1Method m2Name m2Method)
                   (if (eq?  m1Name methodName) (methodV m1Name m1Method)
                       (if (eq? m2Name methodName) (methodV m2Name m2Method)
-                          (methodLookup superClass methodName objectEnv)))]
+                          (methodLookup initialClass superClass methodName objectEnv)))]
           [else (error 'methodLookup (string-append (symbol->string class) " superclass inválida"))]
           ))))
 
@@ -357,3 +358,11 @@
          (seq (send wallet credit 10)
               (send wallet debit 3)))))
   (numV 7))
+
+(test
+ (interpS '(let Wallet (class Object money
+                          (regularMethod mensagemDesconhecida x 19)
+                          (regularMethod debit amount (set! money (- money amount))))
+              (let wallet (new Wallet 0)
+                (send wallet invalid 1))))
+ (numV 19))

@@ -32,3 +32,15 @@ ps: ```self``` is a reference to the class object
          (seq (send wallet credit 10)
               (send wallet debit 3))))
 ```
+
+### Catch unknown method
+To catch unknown methods in the class, you can create override 'mensagemDesconhecida
+```
+> (interpAll)
+    (interpS '(let Wallet (class Object money
+                          (regularMethod mensagemDesconhecida x 19)
+                          (regularMethod debit amount (set! money (- money amount))))
+              (let wallet (new Wallet 0)
+                (send wallet invalid 1))))
+    ; (numV 19)
+```
